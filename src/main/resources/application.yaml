@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: assignment
+  web:
+    resources:
+      cache:
+        period: 0
+        cachecontrol:
+          no-cache: true
+          no-store: true
+  datasource:
+    url: jdbc:h2:mem:assignment;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+app:
+  jwt:
+    secret: y74UEG9778LnDvUGLH0IICD6qTwVHrWn6dl9JP3zuo6
+    expiration-ms: 3600000

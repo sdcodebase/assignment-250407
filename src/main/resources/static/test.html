@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>스마트몰 고객센터</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sidebar-w: 260px;
+  --header-h: 54px;
+  --bg: #f7f8fa;
+  --sidebar-bg: #1c1e26;
+  --sidebar-hover: #2a2d38;
+  --sidebar-active: #363a4a;
+  --accent: #5b5ef4;
+  --accent-hover: #4a4dd8;
+  --user-bubble: #5b5ef4;
+  --ai-bubble: #ffffff;
+  --border: #e8eaf0;
+  --text: #1a1c2e;
+  --muted: #8b8fa8;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warn: #f59e0b;
+}
+html, body { height: 100%; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+/* ─── AUTH ──────────────────────────────────────────────── */
+#view-auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1c1e26 0%, #2d3056 100%);
+}
+.auth-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 44px;
+  width: 400px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.25);
+}
+.auth-logo { text-align: center; margin-bottom: 28px; }
+.auth-logo .icon { font-size: 2.4rem; }
+.auth-logo h1 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-top: 8px; }
+.auth-logo p { font-size: 0.83rem; color: var(--muted); margin-top: 4px; }
+.auth-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
+.auth-tab {
+  flex: 1; text-align: center; padding: 10px;
+  font-size: 0.88rem; font-weight: 600; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: all .15s;
+}
+.auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-form.hidden { display: none; }
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-field label { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.form-field input {
+  border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 11px 14px; font-size: 0.92rem; transition: border-color .15s;
+  width: 100%;
+}
+.form-field input:focus { outline: none; border-color: var(--accent); }
+.btn-auth {
+  margin-top: 4px; padding: 13px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 10px;
+  font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.btn-auth:hover { background: var(--accent-hover); }
+.btn-auth:active { transform: scale(.98); }
+.auth-demo-hint {
+  margin-top: 16px; text-align: center;
+  font-size: 0.78rem; color: var(--muted);
+  padding: 10px; background: #f8f9ff; border-radius: 8px;
+}
+.auth-demo-hint code { color: var(--accent); font-weight: 600; }
+.auth-error { color: #dc2626; font-size: 0.82rem; text-align: center; display: none; }
+
+/* ─── APP SHELL ─────────────────────────────────────────── */
+#view-app { display: none; height: 100vh; flex-direction: column; }
+#view-app.show { display: flex; }
+
+.app-header {
+  height: var(--header-h);
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+  z-index: 10;
+  flex-shrink: 0;
+}
+.app-header .logo { font-size: 1rem; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 6px; }
+.app-header .logo span { color: var(--text); }
+.app-header .spacer { flex: 1; }
+.app-header .user-info { font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.badge-admin {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff; font-size: 0.65rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 999px; letter-spacing: .5px;
+}
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border);
+  background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: var(--muted); transition: all .15s;
+}
+.icon-btn:hover { background: var(--bg); color: var(--text); }
+
+.app-body { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── SIDEBAR ────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.sidebar-top { padding: 16px 12px 12px; }
+.btn-new-chat {
+  width: 100%; padding: 10px 14px;
+  background: rgba(91,94,244,.25); border: 1px solid rgba(91,94,244,.4);
+  border-radius: 10px; color: #fff; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: background .15s;
+}
+.btn-new-chat:hover { background: rgba(91,94,244,.4); }
+.sidebar-label { padding: 14px 14px 6px; font-size: 0.68rem; font-weight: 700; color: #4a4f66; text-transform: uppercase; letter-spacing: .6px; }
+.thread-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.thread-list::-webkit-scrollbar { width: 4px; }
+.thread-list::-webkit-scrollbar-track { background: transparent; }
+.thread-list::-webkit-scrollbar-thumb { background: #3a3f50; border-radius: 4px; }
+.thread-item {
+  padding: 9px 10px; border-radius: 8px; cursor: pointer;
+  margin-bottom: 2px; transition: background .12s;
+  display: flex; align-items: center; gap: 8px;
+}
+.thread-item:hover { background: var(--sidebar-hover); }
+.thread-item.active { background: var(--sidebar-active); }
+.thread-item .t-icon { font-size: 0.85rem; opacity: .6; flex-shrink: 0; }
+.thread-item .t-text { flex: 1; overflow: hidden; }
+.thread-item .t-title { font-size: 0.82rem; color: #d4d8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thread-item .t-date { font-size: 0.7rem; color: #4a4f66; margin-top: 1px; }
+.thread-item .t-del {
+  opacity: 0; width: 22px; height: 22px; border-radius: 5px;
+  border: none; background: rgba(239,68,68,.2); color: #fca5a5;
+  cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: opacity .12s;
+}
+.thread-item:hover .t-del { opacity: 1; }
+.thread-item .t-del:hover { background: rgba(239,68,68,.4); }
+
+/* ─── CHAT AREA ─────────────────────────────────────────── */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.messages::-webkit-scrollbar { width: 6px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+/* empty state */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  color: var(--muted); padding: 40px;
+}
+.empty-state .big-icon { font-size: 3.5rem; opacity: .3; }
+.empty-state h2 { font-size: 1.2rem; color: #9ca3af; font-weight: 600; }
+.empty-state p { font-size: 0.85rem; text-align: center; max-width: 340px; line-height: 1.6; }
+
+/* message row */
+.msg-row { display: flex; gap: 10px; align-items: flex-start; }
+.msg-row.user { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.msg-row.user .msg-avatar { background: var(--accent); }
+.msg-row.ai .msg-avatar { background: #fff; border: 1px solid var(--border); }
+.msg-body { max-width: 68%; display: flex; flex-direction: column; gap: 4px; }
+.msg-row.user .msg-body { align-items: flex-end; }
+.msg-bubble {
+  padding: 12px 16px; border-radius: 16px;
+  font-size: 0.9rem; line-height: 1.65;
+  word-break: break-word; white-space: pre-wrap;
+}
+.msg-row.user .msg-bubble {
+  background: var(--user-bubble); color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.msg-row.ai .msg-bubble {
+  background: var(--ai-bubble); color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.msg-meta { display: flex; align-items: center; gap: 8px; }
+.msg-time { font-size: 0.7rem; color: var(--muted); }
+.feedback-btns { display: flex; gap: 4px; }
+.fb-btn {
+  width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+  background: #fff; cursor: pointer; font-size: 0.78rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s; color: var(--muted);
+}
+.fb-btn:hover { border-color: var(--accent); color: var(--accent); background: #f0f0ff; }
+.fb-btn.active-pos { background: #dcfce7; border-color: #86efac; color: #15803d; }
+.fb-btn.active-neg { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+.cursor-blink { display: inline-block; width: 2px; height: 1em; background: var(--accent); margin-left: 2px; animation: blink .7s step-end infinite; vertical-align: text-bottom; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* input bar */
+.input-bar {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+.input-wrap {
+  display: flex; align-items: flex-end; gap: 10px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 10px 14px;
+  transition: border-color .15s;
+}
+.input-wrap:focus-within { border-color: var(--accent); background: #fff; }
+#msg-input {
+  flex: 1; border: none; background: transparent; resize: none;
+  font-size: 0.92rem; line-height: 1.55; max-height: 160px; overflow-y: auto;
+  font-family: inherit; color: var(--text);
+}
+#msg-input:focus { outline: none; }
+#msg-input::placeholder { color: #b0b4c8; }
+.send-btn {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--accent); border: none; color: #fff;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0; transition: background .15s;
+}
+.send-btn:hover { background: var(--accent-hover); }
+.send-btn:disabled { background: #c7c9e8; cursor: not-allowed; }
+.input-footer { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 0.75rem; color: var(--muted); }
+.input-footer kbd { background: #f0f1f5; border: 1px solid #d1d5db; border-radius: 4px; padding: 1px 5px; font-size: 0.7rem; }
+
+/* ─── ADMIN PANEL (overlay) ─────────────────────────────── */
+.panel-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  display: none; align-items: flex-start; justify-content: flex-end;
+  z-index: 100;
+}
+.panel-overlay.show { display: flex; }
+.admin-panel {
+  width: 520px; height: 100vh;
+  background: #fff; box-shadow: -8px 0 40px rgba(0,0,0,.15);
+  display: flex; flex-direction: column;
+  animation: slideIn .2s ease;
+}
+@keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.admin-header {
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.admin-header h2 { font-size: 1rem; font-weight: 700; flex: 1; }
+.admin-body { flex: 1; overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 22px; }
+.stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.stat-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; text-align: center;
+}
+.stat-card .s-val { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+.stat-card .s-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+.section-title { font-size: 0.82rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.btn-secondary {
+  padding: 9px 16px; border-radius: 9px;
+  border: 1.5px solid var(--accent); background: #fff;
+  color: var(--accent); font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.btn-secondary:hover { background: #f0f0ff; }
+.feedback-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.feedback-table th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 600; font-size: 0.75rem; border-bottom: 1px solid var(--border); }
+.feedback-table td { padding: 9px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.tag-pos { background: #dcfce7; color: #15803d; }
+.tag-neg { background: #fee2e2; color: #dc2626; }
+.tag-pending  { background: #fef9c3; color: #92400e; }
+.tag-resolved { background: #dcfce7; color: #15803d; }
+.btn-mini {
+  padding: 3px 9px; border-radius: 6px; border: 1px solid var(--border);
+  background: #fff; font-size: 0.72rem; cursor: pointer; color: var(--text);
+  transition: all .12s;
+}
+.btn-mini:hover { border-color: var(--accent); color: var(--accent); }
+.csv-pre {
+  background: #0f172a; color: #86efac; border-radius: 8px;
+  padding: 12px; font-family: monospace; font-size: 0.75rem;
+  white-space: pre; overflow-x: auto; max-height: 200px; overflow-y: auto;
+  line-height: 1.5;
+}
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: #1c1e26; color: #fff; padding: 10px 20px; border-radius: 10px;
+  font-size: 0.85rem; font-weight: 500; z-index: 200;
+  animation: fadeUp .25s ease; pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+@keyframes fadeUp { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+.chip {
+  padding: 8px 14px; border-radius: 999px;
+  border: 1.5px solid var(--accent); background: #fff;
+  color: var(--accent); font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.chip:hover { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ AUTH ══════════════════ -->
+<div id="view-auth">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="icon">🛍️</div>
+      <h1>스마트몰</h1>
+      <p>AI 고객센터 — 데모</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login',this)">로그인</div>
+      <div class="auth-tab" onclick="switchAuthTab('signup',this)">회원가입</div>
+    </div>
+
+    <form class="auth-form" id="form-login" onsubmit="return false">
+      <div class="form-field"><label>이메일</label><input id="li-email" type="email" value="admin@example.com" autocomplete="email"/></div>
+      <div class="form-field"><label>비밀번호</label><input id="li-pw" type="password" value="admin1234" autocomplete="current-password"/></div>
+      <div class="auth-error" id="li-err"></div>
+      <button class="btn-auth" onclick="login()">로그인</button>
+    </form>
+
+    <form class="auth-form hidden" id="form-signup" onsubmit="return false">
+      <div class="form-field"><label>이름</label><input id="su-name" value="테스트 사용자"/></div>
+      <div class="form-field"><label>이메일</label><input id="su-email" type="email" value="user@example.com"/></div>
+      <div class="form-field"><label>비밀번호</label><input id="su-pw" type="password" value="user1234"/></div>
+      <div class="auth-error" id="su-err"></div>
+      <button class="btn-auth" onclick="signup()">계정 만들기</button>
+    </form>
+
+    <div class="auth-demo-hint">
+      데모 관리자: <code>admin@example.com</code> / <code>admin1234</code>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ APP ══════════════════ -->
+<div id="view-app">
+
+  <!-- header -->
+  <header class="app-header">
+    <div class="logo" onclick="goHome()" style="cursor:pointer" title="홈으로">🛍️ <span>스마트몰 고객센터</span></div>
+    <div class="spacer"></div>
+    <div class="user-info">
+      <span id="hdr-email"></span>
+      <span class="badge-admin" id="hdr-admin" style="display:none">ADMIN</span>
+    </div>
+    <button class="icon-btn" id="btn-admin-panel" title="관리자 패널" onclick="openAdmin()" style="display:none">⚙️</button>
+    <button class="icon-btn" title="로그아웃" onclick="logout()">↩</button>
+  </header>
+
+  <div class="app-body">
+
+    <!-- sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-label" style="padding-top:18px">대화 세션</div>
+      <div class="thread-list" id="thread-list"><!-- populated --></div>
+    </aside>
+
+    <!-- chat -->
+    <div class="chat-area">
+      <div class="messages" id="messages">
+        <div class="empty-state" id="empty-state">
+          <div class="big-icon">🎧</div>
+          <h2>무엇을 도와드릴까요?</h2>
+          <p>AI 상담원이 24시간 답변해 드립니다.<br/>세션은 마지막 대화 기준 30분 단위로 자동 관리됩니다.</p>
+          <div id="chip-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px"></div>
+        </div>
+      </div>
+      <div class="input-bar">
+        <div class="input-wrap">
+          <textarea id="msg-input" rows="1" placeholder="고객님, 무엇이든 물어보세요…" onkeydown="onInputKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()" title="전송">↑</button>
+        </div>
+        <div class="input-footer">
+          <span><kbd>Enter</kbd> 전송 &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> 줄바꿈</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ ADMIN PANEL ══════════════════ -->
+<div class="panel-overlay" id="admin-overlay" onclick="closeAdminOutside(event)">
+  <div class="admin-panel">
+    <div class="admin-header">
+      <span>⚙️</span>
+      <h2>관리자 패널</h2>
+      <button class="icon-btn" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="admin-body">
+
+      <div>
+        <div class="section-title">24시간 활동 통계</div>
+        <div class="stat-row" id="stat-row">
+          <div class="stat-card"><div class="s-val" id="s-signup">—</div><div class="s-label">가입</div></div>
+          <div class="stat-card"><div class="s-val" id="s-login">—</div><div class="s-label">로그인</div></div>
+          <div class="stat-card"><div class="s-val" id="s-chat">—</div><div class="s-label">대화 생성</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">대화 보고서 (CSV)</div>
+        <button class="btn-secondary" onclick="loadReport()">📥 보고서 가져오기</button>
+        <div id="csv-area" style="margin-top:10px"></div>
+      </div>
+
+      <div>
+        <div class="section-title" style="margin-bottom:10px">피드백 관리</div>
+        <button class="btn-secondary" onclick="loadFeedbacks()" style="margin-bottom:10px">새로고침</button>
+        <table class="feedback-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Chat</th>
+              <th>감정</th>
+              <th>상태</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fb-tbody">
+            <tr><td colspan="5" style="color:#b0b4c8;font-size:.8rem;padding:12px">로드 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── state ────────────────────────────────────────────────────────────────────
+let _token = localStorage.getItem('sionic_token') || '';
+let _user  = null;   // { sub, uid, role }
+let _threads = [];   // ThreadView[]
+let _activeThreadId = null;
+let _sending = false;
+
+// ─── jwt ──────────────────────────────────────────────────────────────────────
+function decodeJwt(t) {
+  try { return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); }
+  catch { return null; }
+}
+function isAdmin() { return _user && _user.role === 'ADMIN'; }
+
+// ─── api ──────────────────────────────────────────────────────────────────────
+function authHdr() {
+  const h = { 'Content-Type': 'application/json' };
+  if (_token) h['Authorization'] = 'Bearer ' + _token;
+  return h;
+}
+async function apiFetch(method, path, body) {
+  const res = await fetch(path, { method, headers: authHdr(), body: body != null ? JSON.stringify(body) : undefined });
+  const ct = res.headers.get('content-type') || '';
+  const data = ct.includes('json') ? await res.json() : await res.text();
+  return { ok: res.ok, status: res.status, data };
+}
+
+// ─── auth tab ─────────────────────────────────────────────────────────────────
+function switchAuthTab(tab, el) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('form-signup').classList.toggle('hidden', tab !== 'signup');
+}
+
+async function login() {
+  const email = document.getElementById('li-email').value.trim();
+  const pw    = document.getElementById('li-pw').value;
+  const errEl = document.getElementById('li-err');
+  errEl.style.display = 'none';
+  const { ok, data } = await apiFetch('POST', '/auth/login', { email, password: pw });
+  if (!ok) { errEl.textContent = data.message || '로그인 실패'; errEl.style.display = 'block'; return; }
+  initSession(data.accessToken);
+}
+
+async function signup() {
+  const name  = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pw    = document.getElementById('su-pw').value;
+  const errEl = document.getElementById('su-err');
+  errEl.style.display = 'none';
+  const { ok, data } = await apiFetch('POST', '/auth/signup', { name, email, password: pw });
+  if (!ok) { errEl.textContent = data.message || '가입 실패'; errEl.style.display = 'block'; return; }
+  initSession(data.accessToken);
+}
+
+function initSession(token) {
+  _token = token;
+  localStorage.setItem('sionic_token', token);
+  _user = decodeJwt(token);
+  document.getElementById('view-auth').style.display = 'none';
+  document.getElementById('view-app').classList.add('show');
+  document.getElementById('hdr-email').textContent = _user?.sub || '';
+  if (isAdmin()) {
+    document.getElementById('hdr-admin').style.display = '';
+    document.getElementById('btn-admin-panel').style.display = '';
+  }
+  initChips();
+  loadThreads();
+}
+
+function logout() {
+  _token = ''; _user = null; _threads = []; _activeThreadId = null;
+  localStorage.removeItem('sionic_token');
+  document.getElementById('view-app').classList.remove('show');
+  document.getElementById('hdr-admin').style.display = 'none';
+  document.getElementById('btn-admin-panel').style.display = 'none';
+  document.getElementById('view-auth').style.display = '';
+  clearMessages();
+  document.getElementById('thread-list').innerHTML = '';
+}
+
+// ─── threads ──────────────────────────────────────────────────────────────────
+async function loadThreads() {
+  const { ok, data } = await apiFetch('GET', '/chats?page=0&size=50&sort=createdAt,desc');
+  if (!ok) { showToast('대화 목록 로드 실패: ' + (data?.message || data)); return; }
+  _threads = data.content || [];
+  renderThreadList();
+}
+
+function renderThreadList() {
+  const el = document.getElementById('thread-list');
+  if (!_threads.length) { el.innerHTML = '<div style="padding:12px 14px;font-size:.78rem;color:#4a4f66">아직 세션이 없습니다</div>'; return; }
+  el.innerHTML = _threads.map(t => {
+    const msgCount = (t.chats || []).length;
+    const sessionDate = fmtSessionDate(t.createdAt);
+    const sessionTime = fmtSessionRange(t.createdAt, t.lastChatAt);
+    const active = t.id === _activeThreadId ? ' active' : '';
+    return `<div class="thread-item${active}" onclick="selectThread(${t.id})" data-tid="${t.id}">
+      <span class="t-icon">🗂️</span>
+      <div class="t-text">
+        <div class="t-title">${esc(sessionDate)}</div>
+        <div class="t-date">${esc(sessionTime)} · ${msgCount}개 메시지</div>
+      </div>
+      <button class="t-del" onclick="deleteThread(event,${t.id})" title="삭제">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function selectThread(threadId) {
+  _activeThreadId = threadId;
+  renderThreadList();
+  const thread = _threads.find(t => t.id === threadId);
+  if (!thread) return;
+  clearMessages();
+  (thread.chats || []).forEach(c => {
+    addUserBubble(c.question, c.createdAt);
+    addAiBubble(c.answer, c.createdAt, c.id, null, false);
+  });
+  scrollBottom();
+}
+
+function goHome() {
+  _activeThreadId = null;
+  renderThreadList();
+  clearMessages();
+  document.getElementById('msg-input').focus();
+}
+
+const CHIPS = [
+  { label: '📦 배송 조회',      text: '제 배송 현황을 확인하고 싶어요.' },
+  { label: '📋 주문 확인',      text: '최근 주문 내역을 알려주세요.' },
+  { label: '🔄 반품/교환 안내', text: '반품 및 교환 방법을 알려주세요.' },
+  { label: '🛍️ 상품 문의',     text: '상품 재고와 가격이 궁금해요.' },
+];
+
+function initChips() {
+  const el = document.getElementById('chip-list');
+  if (!el) return;
+  el.innerHTML = '';
+  CHIPS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = c.label;
+    btn.addEventListener('click', () => useChip(c.text));
+    el.appendChild(btn);
+  });
+}
+
+function useChip(text) {
+  const input = document.getElementById('msg-input');
+  input.value = text;
+  autoResize(input);
+  sendMessage();
+}
+
+async function deleteThread(e, threadId) {
+  e.stopPropagation();
+  const { ok } = await apiFetch('DELETE', `/threads/${threadId}`);
+  if (!ok) { showToast('삭제 실패'); return; }
+  _threads = _threads.filter(t => t.id !== threadId);
+  if (_activeThreadId === threadId) { _activeThreadId = null; clearMessages(); }
+  renderThreadList();
+  showToast('대화가 삭제되었습니다');
+}
+
+// ─── messages ─────────────────────────────────────────────────────────────────
+function clearMessages() {
+  const el = document.getElementById('messages');
+  el.innerHTML = `<div class="empty-state" id="empty-state">
+    <div class="big-icon">🎧</div>
+    <h2>무엇을 도와드릴까요?</h2>
+    <p>AI 상담원이 24시간 답변해 드립니다.<br/>세션은 마지막 대화 기준 30분 단위로 자동 관리됩니다.</p>
+    <div id="chip-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px"></div>
+  </div>`;
+  initChips();
+}
+
+function hideEmpty() {
+  const e = document.getElementById('empty-state');
+  if (e) e.remove();
+}
+
+function addUserBubble(text, createdAt) {
+  hideEmpty();
+  const el = document.createElement('div');
+  el.className = 'msg-row user';
+  el.innerHTML = `
+    <div class="msg-avatar">👤</div>
+    <div class="msg-body">
+      <div class="msg-bubble">${esc(text)}</div>
+      <div class="msg-meta"><span class="msg-time">${fmtTime(createdAt)}</span></div>
+    </div>`;
+  document.getElementById('messages').appendChild(el);
+  return el;
+}
+
+function addAiBubble(text, createdAt, chatId, model, showFb) {
+  hideEmpty();
+  const el = document.createElement('div');
+  el.className = 'msg-row ai';
+  const fbHtml = showFb !== false ? `
+    <div class="feedback-btns" id="fb-${chatId}">
+      <button class="fb-btn" onclick="sendFeedback(${chatId},true,this)" title="도움이 됐어요">👍</button>
+      <button class="fb-btn" onclick="sendFeedback(${chatId},false,this)" title="도움이 안 됐어요">👎</button>
+    </div>` : '';
+  const modelBadge = model ? `<span style="font-size:.7rem;color:var(--muted)">${esc(model)}</span>` : '';
+  el.innerHTML = `
+    <div class="msg-avatar">🎧</div>
+    <div class="msg-body">
+      <div class="msg-bubble" id="bubble-${chatId || 'streaming'}">${esc(text)}</div>
+      <div class="msg-meta">
+        <span class="msg-time">${fmtTime(createdAt)}</span>
+        ${modelBadge}
+        ${fbHtml}
+      </div>
+    </div>`;
+  document.getElementById('messages').appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+// streaming: returns bubble element + append fn
+function createStreamBubble() {
+  hideEmpty();
+  const row = document.createElement('div');
+  row.className = 'msg-row ai';
+
+  const bubbleEl = document.createElement('div');
+  bubbleEl.className = 'msg-bubble';
+  bubbleEl.innerHTML = '<span class="cursor-blink"></span>';
+
+  const timeEl = document.createElement('span');
+  timeEl.className = 'msg-time';
+
+  const metaEl = document.createElement('div');
+  metaEl.className = 'msg-meta';
+  metaEl.appendChild(timeEl);
+
+  const avatarEl = document.createElement('div');
+  avatarEl.className = 'msg-avatar';
+  avatarEl.textContent = '🎧';
+
+  const bodyEl = document.createElement('div');
+  bodyEl.className = 'msg-body';
+  bodyEl.appendChild(bubbleEl);
+  bodyEl.appendChild(metaEl);
+
+  row.appendChild(avatarEl);
+  row.appendChild(bodyEl);
+
+  document.getElementById('messages').appendChild(row);
+  scrollBottom();
+
+  let text = '';
+  function append(delta) {
+    text += delta;
+    bubbleEl.textContent = text;
+    scrollBottom();
+  }
+  function finalize(chatId, createdAt, model) {
+    if (chatId) bubbleEl.id = `bubble-${chatId}`;
+    timeEl.textContent = fmtTime(createdAt);
+    if (chatId) {
+      if (model) {
+        const m = document.createElement('span');
+        m.style.cssText = 'font-size:.7rem;color:var(--muted)';
+        m.textContent = model;
+        metaEl.appendChild(m);
+      }
+      const fbWrap = document.createElement('div');
+      fbWrap.className = 'feedback-btns';
+      fbWrap.id = `fb-${chatId}`;
+      fbWrap.innerHTML = `
+        <button class="fb-btn" onclick="sendFeedback(${chatId},true,this)" title="도움이 됐어요">👍</button>
+        <button class="fb-btn" onclick="sendFeedback(${chatId},false,this)" title="도움이 안 됐어요">👎</button>`;
+      metaEl.appendChild(fbWrap);
+    }
+    scrollBottom();
+  }
+  function showError(msg) {
+    bubbleEl.textContent = '오류: ' + msg;
+    bubbleEl.style.color = '#ef4444';
+  }
+  return { append, finalize, showError };
+}
+
+function scrollBottom() {
+  const el = document.getElementById('messages');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ─── send ─────────────────────────────────────────────────────────────────────
+async function sendMessage() {
+  if (_sending) return;
+  const input = document.getElementById('msg-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  input.value = '';
+  autoResize(input);
+  setSending(true);
+
+  addUserBubble(question, new Date().toISOString());
+  await sendStreaming(question);
+  await loadThreads();
+  setSending(false);
+}
+
+function setSending(v) {
+  _sending = v;
+  document.getElementById('send-btn').disabled = v;
+  document.getElementById('msg-input').disabled = v;
+}
+
+async function sendStreaming(question) {
+  const { append, finalize, showError } = createStreamBubble();
+
+  let res;
+  try {
+    res = await fetch('/chats', {
+      method: 'POST',
+      headers: authHdr(),
+      body: JSON.stringify({ question, isStreaming: true }),
+    });
+  } catch(e) {
+    showError(e.message);
+    return;
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showError(err.message || 'HTTP ' + res.status);
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  let threadId = null;
+  let evt = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (line === '') { evt = ''; continue; }
+      if (line.startsWith('event:')) { evt = line.slice(6).trim(); }
+      else if (line.startsWith('data:')) {
+        const raw = line.slice(5).trim();
+        let obj; try { obj = JSON.parse(raw); } catch { continue; }
+        if (evt === 'thread')  { threadId = obj.threadId; }
+        else if (evt === 'chunk')  { append(obj.delta || ''); }
+        else if (evt === 'done') {
+          finalize(obj.chatId, obj.createdAt, obj.model);
+          _activeThreadId = obj.threadId;
+        }
+      }
+    }
+  }
+}
+
+// ─── feedback ─────────────────────────────────────────────────────────────────
+async function sendFeedback(chatId, positive, btn) {
+  const { ok, data } = await apiFetch('POST', '/feedbacks', { chatId, positive });
+  if (!ok) { showToast(data.message || '피드백 실패'); return; }
+  const container = document.getElementById(`fb-${chatId}`);
+  if (container) {
+    container.querySelectorAll('.fb-btn').forEach(b => { b.classList.remove('active-pos','active-neg'); b.onclick = null; });
+    btn.classList.add(positive ? 'active-pos' : 'active-neg');
+  }
+  showToast(positive ? '👍 피드백을 보냈습니다' : '👎 피드백을 보냈습니다');
+}
+
+// ─── admin panel ──────────────────────────────────────────────────────────────
+async function openAdmin() {
+  document.getElementById('admin-overlay').classList.add('show');
+  loadActivity();
+  loadFeedbacks();
+}
+function closeAdmin() { document.getElementById('admin-overlay').classList.remove('show'); }
+function closeAdminOutside(e) { if (e.target === document.getElementById('admin-overlay')) closeAdmin(); }
+
+async function loadActivity() {
+  const { ok, data } = await apiFetch('GET', '/analytics/activity');
+  if (!ok) return;
+  document.getElementById('s-signup').textContent = data.signupCount      ?? 0;
+  document.getElementById('s-login').textContent  = data.loginCount       ?? 0;
+  document.getElementById('s-chat').textContent   = data.chatCreatedCount ?? 0;
+}
+
+async function loadReport() {
+  const res = await fetch('/analytics/report', { headers: { Authorization: 'Bearer '+_token } });
+  const csv = await res.text();
+  const area = document.getElementById('csv-area');
+  if (!res.ok) { area.innerHTML = `<div style="color:#ef4444;font-size:.8rem">${esc(csv)}</div>`; return; }
+  // download
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'report.csv'; a.click();
+  URL.revokeObjectURL(url);
+  area.innerHTML = `<div class="csv-pre">${esc(csv.slice(0, 800))}${csv.length>800?'\n…':''}` + `</div>`;
+}
+
+async function loadFeedbacks() {
+  const { ok, data } = await apiFetch('GET', '/feedbacks?page=0&size=20&sort=createdAt,desc');
+  const tbody = document.getElementById('fb-tbody');
+  if (!ok) { tbody.innerHTML = '<tr><td colspan="5" style="color:#ef4444;font-size:.8rem;padding:10px">로드 실패</td></tr>'; return; }
+  const items = data.content || [];
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" style="color:#b0b4c8;font-size:.8rem;padding:10px">피드백 없음</td></tr>'; return; }
+  tbody.innerHTML = items.map(f => `
+    <tr>
+      <td>${f.id}</td>
+      <td>${f.chatId}</td>
+      <td><span class="tag ${f.positive?'tag-pos':'tag-neg'}">${f.positive?'👍 긍정':'👎 부정'}</span></td>
+      <td><span class="tag ${f.status==='RESOLVED'?'tag-resolved':'tag-pending'}">${f.status}</span></td>
+      <td>${f.status==='PENDING'
+        ? `<button class="btn-mini" onclick="resolveFeedback(${f.id},this)">해결</button>`
+        : ''}</td>
+    </tr>`).join('');
+}
+
+async function resolveFeedback(id, btn) {
+  const { ok } = await apiFetch('PATCH', `/feedbacks/${id}/status`, { status: 'RESOLVED' });
+  if (!ok) { showToast('실패'); return; }
+  btn.closest('tr').querySelector('.tag').className = 'tag tag-resolved';
+  btn.closest('tr').querySelector('.tag').textContent = 'RESOLVED';
+  btn.remove();
+  showToast('피드백이 해결됐습니다');
+}
+
+// ─── utils ────────────────────────────────────────────────────────────────────
+function onInputKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return fmtTime(iso);
+  return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+}
+function fmtSessionDate(iso) {
+  if (!iso) return '세션';
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return '오늘 세션';
+  return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) + ' 세션';
+}
+function fmtSessionRange(startIso, endIso) {
+  if (!startIso) return '';
+  const start = fmtTime(startIso);
+  const end   = endIso ? fmtTime(endIso) : '';
+  return start === end ? start : `${start} ~ ${end}`;
+}
+let _toastTimer;
+function showToast(msg) {
+  clearTimeout(_toastTimer);
+  let t = document.querySelector('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  _toastTimer = setTimeout(() => t.remove(), 2800);
+}
+
+// ─── init ─────────────────────────────────────────────────────────────────────
+(function init() {
+  if (!_token) return;
+  _user = decodeJwt(_token);
+  if (!_user) {
+    localStorage.removeItem('sionic_token');
+    _token = '';
+    return;
+  }
+  initSession(_token);
+})();
+</script>
+</body>
+</html>
